@@ -1,116 +1,306 @@
-<!doctype html><html lang=zh-cn><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=viewport content="width=device-width,initial-scale=1"><title>在buffalo ls410上安装debian - Fire0594</title><meta name=description content="Buffalo LS410 NAS 安装Debian并升级到新版，进行了一些补充。"><meta name=keywords content="buffalo,nas,ls410,debian"><link rel=icon href=https://fire0594.github.io/favicon.ico><link rel=stylesheet media=all href=https://fire0594.github.io/static/fontawesome-free-6.1.0-web/css/all.min.css><link rel=stylesheet media=all href=https://fire0594.github.io/static/bootstrap-5.1.3-dist/css/bootstrap.min.css><link rel=stylesheet media=all href=https://fire0594.github.io/static/css/style.css><script src=https://fire0594.github.io/static/bootstrap-5.1.3-dist/js/bootstrap.min.js></script>
-<script src=https://fire0594.github.io/static/jquery-3.6.0.min.js></script>
-<script src=https://fire0594.github.io/static/js/script.js></script></head><body><div class="min-vh-100 d-flex flex-column"><nav class="navbar py-1 navbar-expand-lg navbar-light bg-light border-bottom"><div class=container-lg><a class="navbar-brand py-2 fs-6 text-dark" href=https://fire0594.github.io/><i class="fa-solid fa-house me-2"></i>Fire0594</a>
-<button class="navbar-toggler py-2 border-0 shadow-none text-dark" type=button data-bs-toggle=offcanvas data-bs-target=#offcanvas-navbar>
-<i class="fa-solid fa-bars"></i></button><div class="offcanvas offcanvas-end bg-light" tabindex=-1 id=offcanvas-navbar><div class="offcanvas-header px-0 py-1 border-bottom"><p class="offcanvas-title px-3 py-2 text-dark"><i class="fa-solid fa-bars"></i></p><a href=javascript:; class="px-3 py-2 text-secondary" data-bs-dismiss=offcanvas><i class="fa-solid fa-xmark"></i></a></div><div class="offcanvas-body pt-2 pt-lg-0"><ul class="navbar-nav flex-grow-1 justify-content-end"><li class="nav-item ms-lg-2"><a class="nav-link text-dark current" href=https://fire0594.github.io/tech/>技术</a></li><li class="nav-item ms-lg-2"><a class="nav-link text-dark" href=https://fire0594.github.io/life/>生活</a></li></ul></div></div></div></nav><div class="container-lg flex-grow-1 d-flex flex-column"><div class=row><div class=col-lg-9><h1 class="h2 py-3">在buffalo ls410上安装debian</h1><p class="mb-3 pb-3 text-secondary border-bottom"><span class=me-3><i class="fa-regular fa-clock me-2"></i>2018-09-23</span>
-<span class=me-3><i class="fa-solid fa-bars me-2"></i>技术</span></p><div class=content><p>buffalo ls410 是 Buffalo LinkStation 系列的一款arm based nas，MARVELL Armada 370 CPU，512M 内存。</p><p>在ls410上安装Debian，以及一些补充。</p><blockquote><p>2020年更新，本文的方法已不适用，有新的安装方法，不依赖原生固件，不需要debootstrap<br>https://fire0594.com/tech/debian-on-buffalo-ls410-2020.html</p></blockquote><p>教程参考了多处内容，本段略作介绍</p><p>这款单盘位NAS当年销量似乎不高，关于debian的资料很少，而且都没有一条龙式的方案</p><p>山下康成的博客 http://www.yamasita.jp/linkstation/category/ls410d/ 应该是关于在 ls410 上安装 debian 最早的探索，不过似乎只有一些零碎的脚本片段，再加上书面日语（尤其是涉及到计算机部分的内容）很难读懂而且机翻也不顶用，我的尝试并不成功</p><p>之后尝试过另一篇博客上的 ls421de 安装 debian 的教程 https://tohenk.wordpress.com/2014/11/12/debian-wheezy-on-linkstation-ls421de/ 也不成功，教程中的脚本运行顺利，但debootstrap阶段后reboot就不能启动只有白灯闪了</p><p>然后在 github 上的 OpenLinkstation 项目 https://github.com/rogers0/OpenLinkstation 中偶然发现了关于 ls410 的配置代码，但这个项目只支持 ls420，并没有说明支持 ls410，由于 ls410 ls420 ls421 这三款nas都是采用了相同的Armada 370 CPU + 512M 内存配置而且官方固件通用，于是就试了一下。虽然过程中有一些小问题，但最终都解决了，成功为 ls410 安装了debian</p><p>过程中一旦系统挂掉就需要tftp boot引导后刷回原固件，教程及工具参考了 http://anp.synology.me/ls420d/</p><p>正文开始</p><h2>Step.1 安装固件</h2><p>需要的东西</p><ul><li>ls410官方固件 (http://buffalo.jp/support_ap/support/products/ls400.html)</li><li>tftp boot recovery 工具 (http://www.buffalo-technology.com/userfiles/file/downloads/recovery/TFTP%20Boot%20Recovery%20LS400.exe)</li><li>安装 NAS Navigator2 (http://buffalo.jp/support_ap/support/products/ls400.html)</li></ul><p>首先，要安装官方固件，因为之后会用debootstrap建立debian rootfs，而内核使用的是官方固件中的内核，所以要先让ls410升级到最新的官方固件，最新版本1.81是2015年6月发布的，估计以后也不会再更新了(更新：2017年6月27日buffalo发布了1.83版本固件，1.83未测试能否成功debootstrap)</p><p>此步骤适合在一块空硬盘或者已崩溃的系统上安装官方固件，如果你的ls410现在运行正常，可以略过这一步直接在线升级</p><p>首先用网线把ls410和你的计算机 直连，不需要通过交换机或者路由器等其他网络设备</p><p>把你的计算机网卡设置为静态ip，ip地址为192.168.11.1，子网掩码255.255.255.0，关闭计算机中的其他网络设备如无线网卡，关闭计算机中的防火墙</p><p>启动ls410</p><p>运行 TFTP Boot.exe（tftp boot recovery工具），当看到 accepting requests.. 时，按住ls410的 FUNCTION按钮（机子前面板唯一的按钮） 2～3 秒，此时ls410的指示灯会变成白灯，稍等片刻窗口中会出现两行内容Client ** Blocks Served，此时ls410已经通过tftp boot启动成功了，如果不成功的话重复以上步骤</p><p>运行NAS Navigator，如果询问是否自动修改ip地址和时间，选否</p><p>在NAS Navigator查看ls410的ip地址，我这边的情况是ls410都会是一个 169.254.<em>.</em> 这种在 dhcp failed 时的ip地址，修改计算机的ip地址确保ls410和计算机处于同一网段，比如ls410的ip此时为169.254.127.15，那我们就把计算机的ip设置为169.254.127.16（子网掩码255.255.0.0）</p><p>修改ls410官方固件中的升级配置文件 LSUpdater.ini</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span><span style=color:#f92672>[</span>Flags<span style=color:#f92672>]</span>
-</span></span><span style=display:flex><span> - VersionCheck <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span> - NoFormatting <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span> + VersionCheck <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-</span></span><span style=display:flex><span> + NoFormatting <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>
-</span></span><span style=display:flex><span> + <span style=color:#f92672>[</span>SpecialFlags<span style=color:#f92672>]</span>
-</span></span><span style=display:flex><span> + Debug <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span>
-</span></span></code></pre></div><p>运行 LSUpdater.exe （ls410官方固件），在窗口标题栏上 右键 > debug，把 Update 和 Config 中的所有选项都选上</p><p>注意Rebuild partition table，会 重建分区表，所有数据都会清空，记得备份好数据</p><p>点Update开始升级，过程需要一段时间，可以喝喝茶休息一下</p><p>如果一切顺利，固件安装成功后ls410重启完毕（白灯常亮），就可以把ls410通过网线连接到路由器上了<br>不要忘了把计算网卡的ip地址修改回dhcp自动分配</p><h2>Step.2 启用ssh</h2><p>官方固件默认是关闭ssh的，只能通过一个web面板管理ls410</p><p>启用ssh的方法有很多，最简单的就是使用acp commander，无需拆机取硬盘，无需打包固件重刷</p><p>只需要一个acp commander程序 (https://www.gry.ch/Java/styled/)</p><p>进行这一步前要先到web面板中设置好管理员密码</p><p>运行 acp_commander_gui_156.exe 会自动找到局域网中的 ls410，输入管理员密码后测试是否能成功连接</p><p>逐行输入下面的代码并执行</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>chmod <span style=color:#ae81ff>0755</span> /etc/init.d/sshd.sh
-</span></span><span style=display:flex><span><span style=color:#f92672>(</span>echo root;echo root<span style=color:#f92672>)</span>|passwd
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/#Port 22/Port 22/g&#39;</span> /etc/sshd_config
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/#Protocol 2/Protocol 2/g&#39;</span> /etc/sshd_config
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/#PermitRootLogin yes/PermitRootLogin yes/g&#39;</span> /etc/sshd_config
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/#StrictModes yes/StrictModes yes/g&#39;</span> /etc/sshd_config
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/\/usr\/lib\/sftp-server/\/usr\/local\/libexec\/sftp-server/g&#39;</span> /etc/sshd_config
-</span></span><span style=display:flex><span>sed -i <span style=color:#e6db74>&#39;s/&#34;${SUPPORT_SFTP}&#34; = &#34;0&#34;/&#34;${SUPPORT_SFTP}&#34; = &#34;1&#34;/g&#39;</span> /etc/init.d/sshd.sh
-</span></span><span style=display:flex><span>/etc/init.d/sshd.sh restart
-</span></span></code></pre></div><p>注意执行代码后的回显，确保每一句都成功执行</p><p>最后一句重启ssh服务的代码有很高几率执行失败，再试一次就可以</p><p>一切顺利的话，现在就可以ssh登陆到ls410了，用户名和密码都是root</p><h2>Step.3 安装debian</h2><p>在ls410上执行以下代码安装debootstrap</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>wget http://ftp.cn.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.64~bpo70+1_all.deb
-</span></span><span style=display:flex><span>dpkg -i --force-all debootstrap_1.0.64~bpo70+1_all.deb
-</span></span></code></pre></div><p>将github上的 OpenLinkstation 项目上传到 ls410 (https://github.com/rogers0/OpenLinkstation)</p><p>在ls410上执行以下代码部署debian rootfs到用户数据区(sda5)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>chmod -R <span style=color:#ae81ff>777</span> OpenLinkstation-master
-</span></span><span style=display:flex><span>cd OpenLinkstation-master
-</span></span><span style=display:flex><span>vi lib/config
-</span></span><span style=display:flex><span>1_debootstrap/build_rootfs_with_buffalo-kernel.sh
-</span></span><span style=display:flex><span>reboot
-</span></span></code></pre></div><p>config文件头几行内容修改如下</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span><span style=color:#75715e># default settings</span>
-</span></span><span style=display:flex><span>DEBOOTSTRAP<span style=color:#f92672>=</span>debootstrap
-</span></span><span style=display:flex><span>ROOTPW<span style=color:#f92672>=</span>root
-</span></span><span style=display:flex><span>DISTRO<span style=color:#f92672>=</span>wheezy
-</span></span><span style=display:flex><span>NEWHOST<span style=color:#f92672>=</span>LS410
-</span></span><span style=display:flex><span>MIRROR<span style=color:#f92672>=</span>http://ftp.cn.debian.org/debian
-</span></span><span style=display:flex><span>FORCE_BUFFALO_KERNEL<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span>
-</span></span><span style=display:flex><span>SYSTEMD<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>
-</span></span></code></pre></div><p>debootstrap过程比较长，可以再喝杯茶休息下</p><p>ls410重启后，会临时启动到debian环境，指示灯是白灯闪烁但系统确实是启动了的，注意此时千万不要关机/重启或意外断电，否则前功尽弃，只能从头来过</p><p>在ls410上执行以下代码安装debian到系统区(sda2)</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>mkfs.ext3 /dev/sda2
-</span></span><span style=display:flex><span>mount /dev/sda2 /mnt
-</span></span><span style=display:flex><span>/OpenLinkstation-master/1_debootstrap/build_rootfs_with_buffalo-kernel.sh debian
-</span></span><span style=display:flex><span>reboot
-</span></span></code></pre></div><p>重启完后ls410就会启动到完整的debian系统，可以随意操作了</p><p>此时ls410的指示灯依旧会保持白灯闪烁，后面板的电源切换开关无效，USB接口也无效，后面会解决这些问题</p><h2>Step.4 升级debian 到 jessie</h2><p>先移除makedev</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get remove makedev
-</span></span></code></pre></div><p>修改debian源</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>deb http://ftp.jp.debian.org/debian jessie main
-</span></span><span style=display:flex><span>deb-src http://ftp.jp.debian.org/debian jessie main
-</span></span><span style=display:flex><span>deb http://security.debian.org/ jessie/updates main
-</span></span><span style=display:flex><span>deb-src http://security.debian.org/ jessie/updates main
-</span></span></code></pre></div><p>升级</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get update
-</span></span><span style=display:flex><span>apt-get upgrade
-</span></span></code></pre></div><p>升级到jessie</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get dist-upgrade
-</span></span></code></pre></div><p>此时肯定会提示内核版本过低，设置udev为不升级后再重复以上步骤：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>echo udev hold | dpkg --set-selections
-</span></span></code></pre></div><p>清理</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get autoremove
-</span></span><span style=display:flex><span>apt-get clean
-</span></span></code></pre></div><h2>Step.4.1 升级debian 到 stretch</h2><p>修改debian源</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>deb http://ftp.jp.debian.org/debian stretch main
-</span></span><span style=display:flex><span>deb-src http://ftp.jp.debian.org/debian stretch main
-</span></span><span style=display:flex><span>deb http://security.debian.org/ stretch/updates main
-</span></span><span style=display:flex><span>deb-src http://security.debian.org/ stretch/updates main
-</span></span></code></pre></div><p>升级</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get update
-</span></span><span style=display:flex><span>apt-get upgrade
-</span></span></code></pre></div><p>升级到stretch</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get dist-upgrade
-</span></span></code></pre></div><h2>Step.5 补充</h2><p>这一步会解决指示灯、电源开关、USB等各种问题</p><p>因为使用的是官方固件中的内核，设备都有被识别到，只是缺少控制程序所以未能正常工作</p><p>而且官方固件中的驱动模块都会被完整的复制到debian中，只需insmod即可</p><p>首先是时区，默认情况下此时ls410应该是日本时区，会比中国北京时间快1个小时，用下面这条命令重新设置时区：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>dpkg-reconfigure tzdata
-</span></span></code></pre></div><p>用ntp自动同步系统时间</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get install ntp
-</span></span></code></pre></div><p>自动载入USB驱动：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>vi /etc/rc.local
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/fs/ufsd/ufsd.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/usb-common.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/core/usbcore.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/ohci-hcd.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/ehci-hcd.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/xhci-hcd.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/storage/usb-storage.ko
-</span></span><span style=display:flex><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/class/usblp.ko
-</span></span></code></pre></div><p>启动完毕后熄灭LED（LED实在太亮了，亮着还不如灭着）：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>vi /etc/rc.local
-</span></span><span style=display:flex><span> + echo off &gt; /proc/buffalo/gpio/led/power_blink
-</span></span><span style=display:flex><span> + echo off &gt; /proc/buffalo/gpio/led/power
-</span></span></code></pre></div><p>用后面板的电源切换开关开关机，创建/power_sw.sh文件（记得chmod +x 加上权限），内容如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span><span style=color:#75715e>#!/bin/bash
-</span></span></span><span style=display:flex><span><span style=color:#75715e></span>PATH<span style=color:#f92672>=</span>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/bin
-</span></span><span style=display:flex><span>export PATH
-</span></span><span style=display:flex><span><span style=color:#66d9ef>for</span><span style=color:#f92672>((</span>i<span style=color:#f92672>=</span>1;i&lt;<span style=color:#f92672>=</span>11;i++<span style=color:#f92672>))</span>;<span style=color:#66d9ef>do</span>
-</span></span><span style=display:flex><span>  cat /proc/buffalo/gpio/switch/power|<span style=color:#66d9ef>while</span> read status; <span style=color:#66d9ef>do</span>
-</span></span><span style=display:flex><span>  <span style=color:#66d9ef>if</span> <span style=color:#f92672>[</span> $status <span style=color:#f92672>=</span> <span style=color:#e6db74>&#34;off&#34;</span> <span style=color:#f92672>]</span>
-</span></span><span style=display:flex><span>    <span style=color:#66d9ef>then</span>
-</span></span><span style=display:flex><span>      echo on &gt; /proc/buffalo/gpio/led/power
-</span></span><span style=display:flex><span>      echo on &gt; /proc/buffalo/gpio/led/power_blink
-</span></span><span style=display:flex><span>      /sbin/shutdown -h -P now <span style=color:#e6db74>&#34;Power button switched&#34;</span>
-</span></span><span style=display:flex><span>      exit
-</span></span><span style=display:flex><span>  <span style=color:#66d9ef>fi</span>
-</span></span><span style=display:flex><span>  <span style=color:#66d9ef>done</span>
-</span></span><span style=display:flex><span>  sleep <span style=color:#ae81ff>5</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>done</span>
-</span></span></code></pre></div><p>添加cron任务，这样就会每5秒检查一次电源切换开关的状态，如果处于关闭状态就shutdown：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>crontab -e
-</span></span><span style=display:flex><span>*/1 * * * * /power_sw.sh
-</span></span></code></pre></div><p>调节风扇转速：</p><p>风扇转速由文件 /proc/buffalo/gpio/fan/control 控制，有3档转速：full fast slow 和 stop 停转</p><p>通过hddtemp获取硬盘温度并调节风扇转速，高于45度时full，低于45度时slow，创建/fan_speed.sh文件（同样，记得chmod +x 加上权限），内容如下：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span><span style=color:#75715e>#!/bin/bash
-</span></span></span><span style=display:flex><span><span style=color:#75715e></span>PATH<span style=color:#f92672>=</span>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/bin
-</span></span><span style=display:flex><span>export PATH
-</span></span><span style=display:flex><span>TEMP<span style=color:#f92672>=</span><span style=color:#e6db74>`</span>hddtemp -n /dev/sda<span style=color:#e6db74>`</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>if</span> <span style=color:#f92672>[</span> <span style=color:#e6db74>&#34;</span>$TEMP<span style=color:#e6db74>&#34;</span> -le <span style=color:#ae81ff>45</span> <span style=color:#f92672>]</span>
-</span></span><span style=display:flex><span><span style=color:#66d9ef>then</span>
-</span></span><span style=display:flex><span>  echo on &gt; /proc/buffalo/gpio/led/power
-</span></span><span style=display:flex><span>  sleep 0.5
-</span></span><span style=display:flex><span>  echo off &gt; /proc/buffalo/gpio/led/power
-</span></span><span style=display:flex><span>  echo slow &gt; /proc/buffalo/gpio/fan/control
-</span></span><span style=display:flex><span><span style=color:#66d9ef>else</span>
-</span></span><span style=display:flex><span>  echo on &gt; /proc/buffalo/gpio/led/info
-</span></span><span style=display:flex><span>  sleep 0.5
-</span></span><span style=display:flex><span>  echo off &gt; /proc/buffalo/gpio/led/info
-</span></span><span style=display:flex><span>  echo full &gt; /proc/buffalo/gpio/fan/control
-</span></span><span style=display:flex><span><span style=color:#66d9ef>fi</span>
-</span></span></code></pre></div><p>添加cron任务，每1分钟检测一次硬盘温度并调节风扇转速：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>crontab -e
-</span></span><span style=display:flex><span>*/1 * * * * /fan_speed.sh
-</span></span></code></pre></div><p>添加硬盘休眠功能：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>apt-get install hdparm
-</span></span><span style=display:flex><span>vi /etc/rc.local
-</span></span><span style=display:flex><span> + hdparm -S <span style=color:#ae81ff>242</span> /dev/sda
-</span></span></code></pre></div><p>自动挂载swap和用户数据分区：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>mkdir /mnt/sda6
-</span></span><span style=display:flex><span>vi /etc/fstab
-</span></span><span style=display:flex><span> + /dev/sda5   swap   swap   sw   <span style=color:#ae81ff>0</span>   <span style=color:#ae81ff>0</span>
-</span></span><span style=display:flex><span> + /dev/sda6   /mnt/sda6 xfs defaults,noatime <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>0</span>
-</span></span></code></pre></div><p>也可以用uuid挂载：</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-sh data-lang=sh><span style=display:flex><span>+ UUID<span style=color:#f92672>=</span>***** /mnt/sda6 xfs defaults <span style=color:#ae81ff>0</span> <span style=color:#ae81ff>0</span>
-</span></span></code></pre></div><p>mount -a 挂载一下试试，没问题的话，以后数据分区都会被自动挂载到/mnt/sda6</p></div></div><div class=col-lg-3><aside class=mt-4><div class=pb-4><h3 class="h4 mb-3 pb-3 border-bottom">最新文章</h3><ul><li><p class=mb-3><a href=https://fire0594.github.io/tech/migrate-to-hugo/ class=text-dark>迁移到Hugo</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/lenovo-pro13-install-ubuntu-and-windows/ class=text-dark>联想小新Pro13装系统，从Ubuntu到Windows</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/debian-on-buffalo-ls410-2020/ class=text-dark>在buffalo ls410上安装 debian buster 的完美方法</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/debian-on-buffalo-ls410/ class=text-dark>在buffalo ls410上安装debian</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/wacom-orientation-in-new-driver/ class=text-dark>wacom新版驱动不能设置左右手方向的解决办法</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/bilibili-bullets-data-step2/ class=text-dark>B站弹幕大数据(2)—弹幕的获取和解析</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/server-data-auto-backup-to-qiniu/ class=text-dark>将网站文件和数据库自动备份到七牛云端</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/how-to-ask-questions-the-smart-way/ class=text-dark>提问的智慧</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/tech/bilibili-bullets-data-step1/ class=text-dark>B站弹幕大数据(1) - 视频列表的获取</a></p></li><li><p class=mb-3><a href=https://fire0594.github.io/life/footprints-in-the-sand/ class=text-dark>Footprints in the Sand</a></p></li><ul></div></aside></div></div></div><footer class="pt-3 pb-4 bg-light border-top"><div class=container-lg><div class=row><div class="col text-center text-lg-start"><p>Fire0594</p></div></div></div></footer></div></body></html>
+<!DOCTYPE html>
+<html lang="zh-cn"><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+        <title>在buffalo ls410上安装debian - Fire0594</title>
+    
+    
+        <meta name="description" content="Buffalo LS410 NAS 安装Debian并升级到新版，进行了一些补充。">
+    
+    
+        <meta name="keywords" content="buffalo,nas,ls410,debian">
+    
+    <link rel="icon" href="https://fire0594.github.io/favicon.ico">
+    <link rel="stylesheet" media="all" href="https://fire0594.github.io/static/fontawesome-free-6.1.0-web/css/all.min.css">
+    <link rel="stylesheet" media="all" href="https://fire0594.github.io/static/bootstrap-5.1.3-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" media="all" href="https://fire0594.github.io/static/css/style.css">
+    <script src="https://fire0594.github.io/static/bootstrap-5.1.3-dist/js/bootstrap.min.js"></script>
+    <script src="https://fire0594.github.io/static/jquery-3.6.0.min.js"></script>
+    <script src="https://fire0594.github.io/static/js/script.js"></script>
+</head>
+<body>
+        <div class="min-vh-100 d-flex flex-column">
+
+<nav class="navbar py-1 navbar-expand-lg navbar-light bg-light border-bottom">
+    <div class="container-lg">
+        <a class="navbar-brand py-2 fs-6 text-dark" href="https://fire0594.github.io/"><i class="fa-solid fa-house me-2"></i>Fire0594</a>
+        <button class="navbar-toggler py-2 border-0 shadow-none text-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-navbar">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="offcanvas offcanvas-end bg-light" tabindex="-1" id="offcanvas-navbar">
+            <div class="offcanvas-header px-0 py-1 border-bottom">
+                <p class="offcanvas-title px-3 py-2 text-dark"><i class="fa-solid fa-bars"></i></p>
+                <a href="javascript:;" class="px-3 py-2 text-secondary" data-bs-dismiss="offcanvas"><i class="fa-solid fa-xmark"></i></a>
+            </div>
+            <div class="offcanvas-body pt-2 pt-lg-0">
+                <ul class="navbar-nav flex-grow-1 justify-content-end">
+                    
+                        <li class="nav-item ms-lg-2">
+                            
+                                <a class="nav-link text-dark current" href="https://fire0594.github.io/tech/">技术</a>
+                            
+                        </li>
+                    
+                        <li class="nav-item ms-lg-2">
+                            
+                                <a class="nav-link text-dark" href="https://fire0594.github.io/life/">生活</a>
+                            
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>
+<div class="container-lg flex-grow-1 d-flex flex-column">
+                <div class="row">
+                    <div class="col-lg-9">
+    <h1 class="h2 py-3">在buffalo ls410上安装debian</h1>
+    <p class="mb-3 pb-3 text-secondary border-bottom">
+        <span class="me-3"><i class="fa-regular fa-clock me-2"></i>2018-09-23</span>
+        <span class="me-3"><i class="fa-solid fa-bars me-2"></i>技术</span>
+    </p>
+    <div class="content">
+        <p>buffalo ls410 是 Buffalo LinkStation 系列的一款arm based nas，MARVELL Armada 370 CPU，512M 内存。</p>
+<p>在ls410上安装Debian，以及一些补充。</p>
+<blockquote>
+<p>2020年更新，本文的方法已不适用，有新的安装方法，不依赖原生固件，不需要debootstrap<br>
+https://fire0594.com/tech/debian-on-buffalo-ls410-2020.html</p>
+</blockquote>
+<p>教程参考了多处内容，本段略作介绍</p>
+<p>这款单盘位NAS当年销量似乎不高，关于debian的资料很少，而且都没有一条龙式的方案</p>
+<p>山下康成的博客 http://www.yamasita.jp/linkstation/category/ls410d/ 应该是关于在 ls410 上安装 debian 最早的探索，不过似乎只有一些零碎的脚本片段，再加上书面日语（尤其是涉及到计算机部分的内容）很难读懂而且机翻也不顶用，我的尝试并不成功</p>
+<p>之后尝试过另一篇博客上的 ls421de 安装 debian 的教程 https://tohenk.wordpress.com/2014/11/12/debian-wheezy-on-linkstation-ls421de/ 也不成功，教程中的脚本运行顺利，但debootstrap阶段后reboot就不能启动只有白灯闪了</p>
+<p>然后在 github 上的 OpenLinkstation 项目 https://github.com/rogers0/OpenLinkstation 中偶然发现了关于 ls410 的配置代码，但这个项目只支持 ls420，并没有说明支持 ls410，由于 ls410 ls420 ls421 这三款nas都是采用了相同的Armada 370 CPU + 512M 内存配置而且官方固件通用，于是就试了一下。虽然过程中有一些小问题，但最终都解决了，成功为 ls410 安装了debian</p>
+<p>过程中一旦系统挂掉就需要tftp boot引导后刷回原固件，教程及工具参考了 http://anp.synology.me/ls420d/</p>
+<p>正文开始</p>
+<h2>Step.1 安装固件</h2>
+<p>需要的东西</p>
+<ul>
+<li>ls410官方固件 (http://buffalo.jp/support_ap/support/products/ls400.html)</li>
+<li>tftp boot recovery 工具 (http://www.buffalo-technology.com/userfiles/file/downloads/recovery/TFTP%20Boot%20Recovery%20LS400.exe)</li>
+<li>安装 NAS Navigator2 (http://buffalo.jp/support_ap/support/products/ls400.html)</li>
+</ul>
+<p>首先，要安装官方固件，因为之后会用debootstrap建立debian rootfs，而内核使用的是官方固件中的内核，所以要先让ls410升级到最新的官方固件，最新版本1.81是2015年6月发布的，估计以后也不会再更新了(更新：2017年6月27日buffalo发布了1.83版本固件，1.83未测试能否成功debootstrap)</p>
+<p>此步骤适合在一块空硬盘或者已崩溃的系统上安装官方固件，如果你的ls410现在运行正常，可以略过这一步直接在线升级</p>
+<p>首先用网线把ls410和你的计算机 直连，不需要通过交换机或者路由器等其他网络设备</p>
+<p>把你的计算机网卡设置为静态ip，ip地址为192.168.11.1，子网掩码255.255.255.0，关闭计算机中的其他网络设备如无线网卡，关闭计算机中的防火墙</p>
+<p>启动ls410</p>
+<p>运行 TFTP Boot.exe（tftp boot recovery工具），当看到 accepting requests.. 时，按住ls410的 FUNCTION按钮（机子前面板唯一的按钮） 2～3 秒，此时ls410的指示灯会变成白灯，稍等片刻窗口中会出现两行内容Client ** Blocks Served，此时ls410已经通过tftp boot启动成功了，如果不成功的话重复以上步骤</p>
+<p>运行NAS Navigator，如果询问是否自动修改ip地址和时间，选否</p>
+<p>在NAS Navigator查看ls410的ip地址，我这边的情况是ls410都会是一个 169.254.<em>.</em> 这种在 dhcp failed 时的ip地址，修改计算机的ip地址确保ls410和计算机处于同一网段，比如ls410的ip此时为169.254.127.15，那我们就把计算机的ip设置为169.254.127.16（子网掩码255.255.0.0）</p>
+<p>修改ls410官方固件中的升级配置文件 LSUpdater.ini</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f92672">[</span>Flags<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span> - VersionCheck <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> - NoFormatting <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span> + VersionCheck <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span> + NoFormatting <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span> + <span style="color:#f92672">[</span>SpecialFlags<span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span> + Debug <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span></code></pre></div><p>运行 LSUpdater.exe （ls410官方固件），在窗口标题栏上 右键 &gt; debug，把 Update 和 Config 中的所有选项都选上</p>
+<p>注意Rebuild partition table，会 重建分区表，所有数据都会清空，记得备份好数据</p>
+<p>点Update开始升级，过程需要一段时间，可以喝喝茶休息一下</p>
+<p>如果一切顺利，固件安装成功后ls410重启完毕（白灯常亮），就可以把ls410通过网线连接到路由器上了<br>
+不要忘了把计算网卡的ip地址修改回dhcp自动分配</p>
+<h2>Step.2 启用ssh</h2>
+<p>官方固件默认是关闭ssh的，只能通过一个web面板管理ls410</p>
+<p>启用ssh的方法有很多，最简单的就是使用acp commander，无需拆机取硬盘，无需打包固件重刷</p>
+<p>只需要一个acp commander程序 (https://www.gry.ch/Java/styled/)</p>
+<p>进行这一步前要先到web面板中设置好管理员密码</p>
+<p>运行 acp_commander_gui_156.exe 会自动找到局域网中的 ls410，输入管理员密码后测试是否能成功连接</p>
+<p>逐行输入下面的代码并执行</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>chmod <span style="color:#ae81ff">0755</span> /etc/init.d/sshd.sh
+</span></span><span style="display:flex;"><span><span style="color:#f92672">(</span>echo root;echo root<span style="color:#f92672">)</span>|passwd
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/#Port 22/Port 22/g&#39;</span> /etc/sshd_config
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/#Protocol 2/Protocol 2/g&#39;</span> /etc/sshd_config
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/#PermitRootLogin yes/PermitRootLogin yes/g&#39;</span> /etc/sshd_config
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/#StrictModes yes/StrictModes yes/g&#39;</span> /etc/sshd_config
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/\/usr\/lib\/sftp-server/\/usr\/local\/libexec\/sftp-server/g&#39;</span> /etc/sshd_config
+</span></span><span style="display:flex;"><span>sed -i <span style="color:#e6db74">&#39;s/&#34;${SUPPORT_SFTP}&#34; = &#34;0&#34;/&#34;${SUPPORT_SFTP}&#34; = &#34;1&#34;/g&#39;</span> /etc/init.d/sshd.sh
+</span></span><span style="display:flex;"><span>/etc/init.d/sshd.sh restart
+</span></span></code></pre></div><p>注意执行代码后的回显，确保每一句都成功执行</p>
+<p>最后一句重启ssh服务的代码有很高几率执行失败，再试一次就可以</p>
+<p>一切顺利的话，现在就可以ssh登陆到ls410了，用户名和密码都是root</p>
+<h2>Step.3 安装debian</h2>
+<p>在ls410上执行以下代码安装debootstrap</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>wget http://ftp.cn.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.64~bpo70+1_all.deb
+</span></span><span style="display:flex;"><span>dpkg -i --force-all debootstrap_1.0.64~bpo70+1_all.deb
+</span></span></code></pre></div><p>将github上的 OpenLinkstation 项目上传到 ls410 (https://github.com/rogers0/OpenLinkstation)</p>
+<p>在ls410上执行以下代码部署debian rootfs到用户数据区(sda5)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>chmod -R <span style="color:#ae81ff">777</span> OpenLinkstation-master
+</span></span><span style="display:flex;"><span>cd OpenLinkstation-master
+</span></span><span style="display:flex;"><span>vi lib/config
+</span></span><span style="display:flex;"><span>1_debootstrap/build_rootfs_with_buffalo-kernel.sh
+</span></span><span style="display:flex;"><span>reboot
+</span></span></code></pre></div><p>config文件头几行内容修改如下</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e"># default settings</span>
+</span></span><span style="display:flex;"><span>DEBOOTSTRAP<span style="color:#f92672">=</span>debootstrap
+</span></span><span style="display:flex;"><span>ROOTPW<span style="color:#f92672">=</span>root
+</span></span><span style="display:flex;"><span>DISTRO<span style="color:#f92672">=</span>wheezy
+</span></span><span style="display:flex;"><span>NEWHOST<span style="color:#f92672">=</span>LS410
+</span></span><span style="display:flex;"><span>MIRROR<span style="color:#f92672">=</span>http://ftp.cn.debian.org/debian
+</span></span><span style="display:flex;"><span>FORCE_BUFFALO_KERNEL<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>SYSTEMD<span style="color:#f92672">=</span><span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>debootstrap过程比较长，可以再喝杯茶休息下</p>
+<p>ls410重启后，会临时启动到debian环境，指示灯是白灯闪烁但系统确实是启动了的，注意此时千万不要关机/重启或意外断电，否则前功尽弃，只能从头来过</p>
+<p>在ls410上执行以下代码安装debian到系统区(sda2)</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkfs.ext3 /dev/sda2
+</span></span><span style="display:flex;"><span>mount /dev/sda2 /mnt
+</span></span><span style="display:flex;"><span>/OpenLinkstation-master/1_debootstrap/build_rootfs_with_buffalo-kernel.sh debian
+</span></span><span style="display:flex;"><span>reboot
+</span></span></code></pre></div><p>重启完后ls410就会启动到完整的debian系统，可以随意操作了</p>
+<p>此时ls410的指示灯依旧会保持白灯闪烁，后面板的电源切换开关无效，USB接口也无效，后面会解决这些问题</p>
+<h2>Step.4 升级debian 到 jessie</h2>
+<p>先移除makedev</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get remove makedev
+</span></span></code></pre></div><p>修改debian源</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>deb http://ftp.jp.debian.org/debian jessie main
+</span></span><span style="display:flex;"><span>deb-src http://ftp.jp.debian.org/debian jessie main
+</span></span><span style="display:flex;"><span>deb http://security.debian.org/ jessie/updates main
+</span></span><span style="display:flex;"><span>deb-src http://security.debian.org/ jessie/updates main
+</span></span></code></pre></div><p>升级</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get update
+</span></span><span style="display:flex;"><span>apt-get upgrade
+</span></span></code></pre></div><p>升级到jessie</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get dist-upgrade
+</span></span></code></pre></div><p>此时肯定会提示内核版本过低，设置udev为不升级后再重复以上步骤：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>echo udev hold | dpkg --set-selections
+</span></span></code></pre></div><p>清理</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get autoremove
+</span></span><span style="display:flex;"><span>apt-get clean
+</span></span></code></pre></div><h2>Step.4.1 升级debian 到 stretch</h2>
+<p>修改debian源</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>deb http://ftp.jp.debian.org/debian stretch main
+</span></span><span style="display:flex;"><span>deb-src http://ftp.jp.debian.org/debian stretch main
+</span></span><span style="display:flex;"><span>deb http://security.debian.org/ stretch/updates main
+</span></span><span style="display:flex;"><span>deb-src http://security.debian.org/ stretch/updates main
+</span></span></code></pre></div><p>升级</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get update
+</span></span><span style="display:flex;"><span>apt-get upgrade
+</span></span></code></pre></div><p>升级到stretch</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get dist-upgrade
+</span></span></code></pre></div><h2>Step.5 补充</h2>
+<p>这一步会解决指示灯、电源开关、USB等各种问题</p>
+<p>因为使用的是官方固件中的内核，设备都有被识别到，只是缺少控制程序所以未能正常工作</p>
+<p>而且官方固件中的驱动模块都会被完整的复制到debian中，只需insmod即可</p>
+<p>首先是时区，默认情况下此时ls410应该是日本时区，会比中国北京时间快1个小时，用下面这条命令重新设置时区：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>dpkg-reconfigure tzdata
+</span></span></code></pre></div><p>用ntp自动同步系统时间</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get install ntp
+</span></span></code></pre></div><p>自动载入USB驱动：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>vi /etc/rc.local
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/fs/ufsd/ufsd.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/usb-common.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/core/usbcore.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/ohci-hcd.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/ehci-hcd.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/host/xhci-hcd.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/storage/usb-storage.ko
+</span></span><span style="display:flex;"><span> + insmod /lib/modules/3.3.4/kernel/drivers/usb/class/usblp.ko
+</span></span></code></pre></div><p>启动完毕后熄灭LED（LED实在太亮了，亮着还不如灭着）：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>vi /etc/rc.local
+</span></span><span style="display:flex;"><span> + echo off &gt; /proc/buffalo/gpio/led/power_blink
+</span></span><span style="display:flex;"><span> + echo off &gt; /proc/buffalo/gpio/led/power
+</span></span></code></pre></div><p>用后面板的电源切换开关开关机，创建/power_sw.sh文件（记得chmod +x 加上权限），内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>PATH<span style="color:#f92672">=</span>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/bin
+</span></span><span style="display:flex;"><span>export PATH
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span><span style="color:#f92672">((</span>i<span style="color:#f92672">=</span>1;i&lt;<span style="color:#f92672">=</span>11;i++<span style="color:#f92672">))</span>;<span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>  cat /proc/buffalo/gpio/switch/power|<span style="color:#66d9ef">while</span> read status; <span style="color:#66d9ef">do</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> $status <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;off&#34;</span> <span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>      echo on &gt; /proc/buffalo/gpio/led/power
+</span></span><span style="display:flex;"><span>      echo on &gt; /proc/buffalo/gpio/led/power_blink
+</span></span><span style="display:flex;"><span>      /sbin/shutdown -h -P now <span style="color:#e6db74">&#34;Power button switched&#34;</span>
+</span></span><span style="display:flex;"><span>      exit
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">fi</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">done</span>
+</span></span><span style="display:flex;"><span>  sleep <span style="color:#ae81ff">5</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">done</span>
+</span></span></code></pre></div><p>添加cron任务，这样就会每5秒检查一次电源切换开关的状态，如果处于关闭状态就shutdown：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>crontab -e
+</span></span><span style="display:flex;"><span>*/1 * * * * /power_sw.sh
+</span></span></code></pre></div><p>调节风扇转速：</p>
+<p>风扇转速由文件 /proc/buffalo/gpio/fan/control 控制，有3档转速：full fast slow 和 stop 停转</p>
+<p>通过hddtemp获取硬盘温度并调节风扇转速，高于45度时full，低于45度时slow，创建/fan_speed.sh文件（同样，记得chmod +x 加上权限），内容如下：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#75715e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>PATH<span style="color:#f92672">=</span>/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/root/bin
+</span></span><span style="display:flex;"><span>export PATH
+</span></span><span style="display:flex;"><span>TEMP<span style="color:#f92672">=</span><span style="color:#e6db74">`</span>hddtemp -n /dev/sda<span style="color:#e6db74">`</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> <span style="color:#f92672">[</span> <span style="color:#e6db74">&#34;</span>$TEMP<span style="color:#e6db74">&#34;</span> -le <span style="color:#ae81ff">45</span> <span style="color:#f92672">]</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">then</span>
+</span></span><span style="display:flex;"><span>  echo on &gt; /proc/buffalo/gpio/led/power
+</span></span><span style="display:flex;"><span>  sleep 0.5
+</span></span><span style="display:flex;"><span>  echo off &gt; /proc/buffalo/gpio/led/power
+</span></span><span style="display:flex;"><span>  echo slow &gt; /proc/buffalo/gpio/fan/control
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">else</span>
+</span></span><span style="display:flex;"><span>  echo on &gt; /proc/buffalo/gpio/led/info
+</span></span><span style="display:flex;"><span>  sleep 0.5
+</span></span><span style="display:flex;"><span>  echo off &gt; /proc/buffalo/gpio/led/info
+</span></span><span style="display:flex;"><span>  echo full &gt; /proc/buffalo/gpio/fan/control
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">fi</span>
+</span></span></code></pre></div><p>添加cron任务，每1分钟检测一次硬盘温度并调节风扇转速：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>crontab -e
+</span></span><span style="display:flex;"><span>*/1 * * * * /fan_speed.sh
+</span></span></code></pre></div><p>添加硬盘休眠功能：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>apt-get install hdparm
+</span></span><span style="display:flex;"><span>vi /etc/rc.local
+</span></span><span style="display:flex;"><span> + hdparm -S <span style="color:#ae81ff">242</span> /dev/sda
+</span></span></code></pre></div><p>自动挂载swap和用户数据分区：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkdir /mnt/sda6
+</span></span><span style="display:flex;"><span>vi /etc/fstab
+</span></span><span style="display:flex;"><span> + /dev/sda5   swap   swap   sw   <span style="color:#ae81ff">0</span>   <span style="color:#ae81ff">0</span>
+</span></span><span style="display:flex;"><span> + /dev/sda6   /mnt/sda6 xfs defaults,noatime <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>也可以用uuid挂载：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>+ UUID<span style="color:#f92672">=</span>***** /mnt/sda6 xfs defaults <span style="color:#ae81ff">0</span> <span style="color:#ae81ff">0</span>
+</span></span></code></pre></div><p>mount -a 挂载一下试试，没问题的话，以后数据分区都会被自动挂载到/mnt/sda6</p>
+
+    </div>
+
+                    </div>
+                    <div class="col-lg-3">
+                        <aside class="mt-4">
+    <div class="pb-4">
+        <h3 class="h4 mb-3 pb-3 border-bottom">最新文章</h3>
+        <ul>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/migrate-to-hugo/" class="text-dark">迁移到Hugo</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/lenovo-pro13-install-ubuntu-and-windows/" class="text-dark">联想小新Pro13装系统，从Ubuntu到Windows</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/debian-on-buffalo-ls410-2020/" class="text-dark">在buffalo ls410上安装 debian buster 的完美方法</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/debian-on-buffalo-ls410/" class="text-dark">在buffalo ls410上安装debian</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/wacom-orientation-in-new-driver/" class="text-dark">wacom新版驱动不能设置左右手方向的解决办法</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/bilibili-bullets-data-step2/" class="text-dark">B站弹幕大数据(2)—弹幕的获取和解析</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/server-data-auto-backup-to-qiniu/" class="text-dark">将网站文件和数据库自动备份到七牛云端</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/how-to-ask-questions-the-smart-way/" class="text-dark">提问的智慧</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/tech/bilibili-bullets-data-step1/" class="text-dark">B站弹幕大数据(1) - 视频列表的获取</a></p></li>
+            
+                <li><p class="mb-3"><a href="https://fire0594.github.io/life/footprints-in-the-sand/" class="text-dark">Footprints in the Sand</a></p></li>
+            
+        <ul>
+    </div>
+</aside>
+
+                    </div>
+                </div>
+            </div><footer class="pt-3 pb-4 bg-light border-top">
+    <div class="container-lg">
+        <div class="row">
+            <div class="col text-center text-lg-start">
+                <p>Fire0594</p>
+            </div>
+        </div>
+    </div>
+</footer>
+</div>
+    </body>
+</html>
