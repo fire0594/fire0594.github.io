@@ -16,7 +16,6 @@ a { text-decoration: none; }
 .pagination .page-item a.page-link { color: var(--bs-secondary); box-shadow: none!important; }
 .pagination .page-item.active span.page-link { color: var(--bs-secondary); background-color: var(--bs-gray-200); border-color: var(--bs-gray-300); }
 /* Style */
-.content { padding-bottom: 1rem; }
 .content hr { color: var(--bs-gray-300); opacity: 1; }
 .content img { max-width: 100%; }
 .content blockquote { padding: 1rem 1.5rem; background-color: var(--bs-gray-200); border-left: 3px solid var(--bs-gray-400); }
