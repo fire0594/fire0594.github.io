@@ -1,0 +1,21 @@
+{{ define "main" }}
+    <div class="mt-4 pb-4 border-bottom border-secondary">
+        <h1 class="h2 pb-2">{{ .Title }}</h1>
+        <p class="text-secondary">分类下共有{{ len .RegularPages }}篇文章</p>
+    </div>
+    {{ range (.Paginate .RegularPages.ByDate.Reverse).Pages }}
+        <article class="mt-4 pb-4 border-bottom">
+            <h2 class="h4 pb-2"><a href="{{ .Permalink }}" class="text-dark">{{ .Title }}</a></h2>
+            <p class="pb-2 text-secondary">
+                <span class="me-3"><i class="fa-regular fa-clock me-2"></i>{{ .Date.Format "2006-01-02" }}</span>{{- "" -}}
+                <span><i class="fa-solid fa-bars me-2"></i><a href="{{ .CurrentSection.Permalink }}" class="text-secondary">{{ .CurrentSection.Params.Title }}</a></span>
+            </p>
+            {{ if .Params.description }}
+                <p class="text-secondary">{{ .Params.description }}</p>
+            {{ else }}
+                <p class="text-secondary">{{ .Summary }}</p>
+            {{ end }}
+        </article>
+    {{ end }}
+    {{ template "partials/pagination.html" . }}
+{{ end }}

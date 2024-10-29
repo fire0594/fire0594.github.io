@@ -1,0 +1,13 @@
+{{ define "main" }}
+    <h1 class="h2 pt-4 pb-2">{{ .Title }}</h1>
+    <p class="mb-3 pb-3 text-secondary border-bottom">
+        <span class="me-3"><i class="fa-regular fa-clock me-2"></i>{{ .Date.Format "2006-01-02" }}</span>{{- "" -}}
+        <span><i class="fa-solid fa-bars me-2"></i><a href="{{ .CurrentSection.Permalink }}" class="text-secondary">{{ .CurrentSection.Params.Title }}</a></span>
+    </p>
+    <div class="content pb-4">
+        {{ .Content }}
+    </div>
+    <div class="comments pb-4">
+        {{ partial "comments.html" . }}
+    </div>
+{{ end }}

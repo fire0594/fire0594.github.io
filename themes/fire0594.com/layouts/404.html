@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.Language }}">
+    {{- partial "head.html" . -}}
+    <body>
+        <div class="min-vh-100 d-flex flex-column">
+            {{- partial "header.html" . -}}
+            <div class="container-lg flex-grow-1 d-flex flex-column">
+                <div class="row">
+                    <div class="col-lg-9 pe-lg-5">
+                        <h1 class="h2 mt-4 pb-2">页面不存在</h1>
+                        <p class="text-secondary">404 Page not found</p>
+                    </div>
+                    <div class="col-lg-3">
+                        {{ template "partials/sidebar.html" . }}
+                    </div>
+                </div>
+            </div>
+            {{- partial "footer.html" . -}}
+        </div>
+    </body>
+</html>

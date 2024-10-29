@@ -1,0 +1,29 @@
+{{ $CurrentSection := .CurrentSection.Params.Slug }}
+
+<nav class="navbar py-1 navbar-expand-lg navbar-light bg-light border-bottom">
+    <div class="container-lg">
+        <a class="navbar-brand py-2 fs-6 text-dark" href="{{ .Site.BaseURL }}"><i class="fa-solid fa-house me-2"></i>{{ .Site.Title }}</a>{{- "" -}}
+        <button class="navbar-toggler py-2 border-0 shadow-none text-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-navbar">{{- "" -}}
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="offcanvas offcanvas-end bg-light" tabindex="-1" id="offcanvas-navbar">
+            <div class="offcanvas-header px-0 py-1 border-bottom">
+                <p class="offcanvas-title px-3 py-2 text-dark"><i class="fa-solid fa-bars"></i></p>
+                <a href="javascript:;" class="px-3 py-2 text-secondary" data-bs-dismiss="offcanvas"><i class="fa-solid fa-xmark"></i></a>
+            </div>
+            <div class="offcanvas-body pt-2 pt-lg-0">
+                <ul class="navbar-nav flex-grow-1 justify-content-end">
+                    {{ range (.Site.Sections.ByParam "order") }}
+                        <li class="nav-item ms-lg-2">
+                            {{ if eq $CurrentSection .Slug }}
+                                <a class="nav-link text-dark current" href="{{ .Permalink }}">{{ .Title }}</a>
+                            {{ else }}
+                                <a class="nav-link text-dark" href="{{ .Permalink }}">{{ .Title }}</a>
+                            {{ end }}
+                        </li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+    </div>
+</nav>

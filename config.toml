@@ -1,0 +1,29 @@
+baseURL = 'https://fire0594.com/'
+languageCode = 'zh-cn'
+defaultContentLanguage = 'zh-cn'
+title = 'Fire0594'
+theme = "fire0594.com"
+
+disableKinds = ["taxonomyTerm", "taxonomy", "RSS"]
+disableHugoGeneratorInject = true
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.extensions]
+      linkify = false
+    [markup.goldmark.parser]
+      autoHeadingID = false
+    [markup.goldmark.renderer]
+      hardWraps = true
+
+[minify]
+  minifyOutput = true
+  [minify.tdewolff]
+    [minify.tdewolff.html]
+      keepQuotes = true
+      keepWhitespace = false
+    [minify.tdewolff.xml]
+      keepWhitespace = false
+
+[outputs]
+  home = ["HTML", "JSON"]
