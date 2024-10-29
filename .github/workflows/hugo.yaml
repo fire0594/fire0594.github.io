@@ -54,8 +54,7 @@ jobs:
           HUGO_ENVIRONMENT: production
           TZ: America/Los_Angeles
         run: |
-          hugo \
-            --gc
+          hugo --gc
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
