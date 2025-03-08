@@ -42,7 +42,7 @@ cat /proc/cmdline
 
 根据结果执行相应的命令
 
-## 3.1.结果是firmware=0或者mtd=ubi
+### 3.1.结果是firmware=0或者mtd=ubi
 
 ```sh
 nvram set boot_wait=on
@@ -55,7 +55,7 @@ nvram set flag_try_sys2_failed=0
 nvram commit
 ```
 
-## 3.2.结果是firmware=1或者mtd=ubi1
+### 3.2.结果是firmware=1或者mtd=ubi1
 
 ```sh
 nvram set boot_wait=on
@@ -72,13 +72,13 @@ nvram commit
 
 和步骤3一样，不同的槽位要执行不同的命令
 
-## 4.1.结果是firmware=0或者mtd=ubi
+### 4.1.结果是firmware=0或者mtd=ubi
 
 ```sh
 ubiformat /dev/mtd9 -y -f /tmp/*-stock-initramfs-factory.ubi
 ```
 
-## 4.2.结果是firmware=1或者mtd=ubi1
+### 4.2.结果是firmware=1或者mtd=ubi1
 
 ```sh
 ubiformat /dev/mtd8 -y -f /tmp/*-stock-initramfs-factory.ubi
