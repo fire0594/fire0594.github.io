@@ -8,13 +8,13 @@ draft: false
 ---
 
 为WR30U刷入stock layout的Openwrt
-参考 *https://github.com/openwrt/openwrt/pull/12770
+参考 *https://github.com/openwrt/openwrt/pull/12770*
 原文中也有刷Openwrt U-Boot layout的方法
 
 ## 1.打开SSH
 
 开SSH的方法有很多，这个方法应该是最方便的。
-项目地址 *https://github.com/openwrt-xiaomi/xmir-patcher
+项目地址 *https://github.com/openwrt-xiaomi/xmir-patcher*
 下载下来之后按说明安装依赖并运行即可。
 
 ![xmir-patcher](1.png)
@@ -88,7 +88,7 @@ ubiformat /dev/mtd8 -y -f /tmp/*-stock-initramfs-factory.ubi
 
 这一步在后面的升级步骤中会自动执行，可以忽略，不过手动执行一下也没啥坏处。
 
-如果fw_setenv命令无效，就需要执行以下下面这条命令
+如果`fw_setenv`命令无效，就需要执行以下下面这条命令
 
 ```sh
 echo "/dev/mtd1 0x0 0x10000 0x20000" > /etc/fw_env.config
