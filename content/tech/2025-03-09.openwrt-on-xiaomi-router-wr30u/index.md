@@ -2,12 +2,12 @@
 slug: "openwrt-on-xiaomi-router-wr30u"
 title: "小米WR30U路由器刷OpenWrt"
 keywords: "openwrt,小米,路由器,wr30u"
-description: "给小米WR30U路由器刷入stock layout的Openwrt固件。"
+description: "给小米WR30U路由器刷入stock layout（原厂U-Boot）的Openwrt固件。"
 date: 2025-03-09T01:22:00+08:00
 draft: false
 ---
 
-为WR30U刷入stock layout的Openwrt
+为WR30U刷入stock layout（原厂U-Boot）的Openwrt
 参考 *https://github.com/openwrt/openwrt/pull/12770*
 原文中也有刷Openwrt U-Boot layout的方法
 
@@ -30,6 +30,8 @@ nanddump -f /tmp/FIP.bin /dev/mtd5
 nanddump -f /tmp/ubi.bin /dev/mtd8
 nanddump -f /tmp/KF.bin /dev/mtd12
 ```
+
+stock layout（原厂U-Boot）和 Openwrt U-Boot layout 都不支持NMBM，也就是闪存坏快管理，请妥善保管好备份文件。
 
 ## 3.设置Nvram
 
@@ -83,6 +85,8 @@ ubiformat /dev/mtd9 -y -f /tmp/*-stock-initramfs-factory.ubi
 ```sh
 ubiformat /dev/mtd8 -y -f /tmp/*-stock-initramfs-factory.ubi
 ```
+
+然后重启路由器就会进入initramfs模式的OpenWrt
 
 ## 5.设置uboot-env
 
