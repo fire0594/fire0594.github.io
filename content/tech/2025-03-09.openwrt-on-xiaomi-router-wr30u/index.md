@@ -92,7 +92,7 @@ ubiformat /dev/mtd8 -y -f /tmp/*-stock-initramfs-factory.ubi
 
 这一步在后面的升级步骤中会自动执行，可以忽略，不过手动执行一下也没啥坏处。
 
-如果`fw_setenv`命令无效，就需要执行以下下面这条命令
+如果 `fw_setenv` 命令无效，就需要执行以下下面这条命令
 
 ```sh
 echo "/dev/mtd1 0x0 0x10000 0x20000" > /etc/fw_env.config
