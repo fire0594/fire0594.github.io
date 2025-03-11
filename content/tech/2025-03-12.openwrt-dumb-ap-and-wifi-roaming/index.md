@@ -25,7 +25,7 @@ draft: false
 > AP路由器的WAN口/WAN6口是否要删除？
 > 旧版文档说这一步是可选步骤，新版则未作任何说明，所以这应该依旧是个可选步骤
 
-### <span style="color:red">先将AP路由器断开网络，只有电脑通过网线连接到其LAN口，然后开始设置</span>
+### `先将AP路由器断开网络，只有电脑通过网线连接到其LAN口，然后开始设置`
 
 ### 1.1  AP路由器的LAN口设置为静态地址（static IP）
 
@@ -53,7 +53,7 @@ draft: false
 `常规设置`里勾选`忽略此接口`
 `IPv6设置`里禁用`RA服务`、`DHCPv6服务`、`NDP代理`
 
-### <span style="color:red">到这里AP就可以工作了，现在可以用网线连接主路由器的LAN口和AP路由器的LAN口</span>
+### `到这里AP就可以工作了，现在可以用网线连接主路由器的LAN口和AP路由器的LAN口`
 
 ## 2.AP漫游
 
@@ -82,6 +82,7 @@ draft: false
 ### 2.1  更换为完整的wpad包
 
 我的路由器自带的是wpad-basic-mbedtls，更换为wpad-mbedtls
+在线或者离线都行，最好用SSH操作
 
 ```sh
 opkg update && opkg install wpad-mbedtls --download-only && opkg remove wpad-basic-mbedtls && opkg install wpad-mbedtls --cache . && rm *.ipk
@@ -130,7 +131,7 @@ opkg remove wpad-basic-mbedtls && opkg install /tmp/wpad-mbedtls_*.ipk
 `daemon.notice hostapd: phy*-ap*: AP-STA-CONNECTED **:**:**:**:**:** auth_alg=ft`
 上面这条日志是设备连接AP，并且使用的是FT协议，而不是一般的4次握手认证，漫游成功
 
----
+#### 参考
 
 > OpenWrt设置为AP（当前版本，英文）
 > https://openwrt.org/docs/guide-user/network/wifi/wifiextenders/bridgedap
