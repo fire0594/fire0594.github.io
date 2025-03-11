@@ -3,7 +3,7 @@ slug: "openwrt-dumb-ap-and-wifi-roaming"
 title: "OpenWrt路由器设置AP和Wi-Fi漫游"
 keywords: "openwrt,AP,wifi漫游,802.11k,802.11v,802.11r"
 description: "多台OpenWrt路由器设置为AP，并使用802.11 k/v/r协议进行Wi-Fi漫游"
-date: 2025-03-12T12:22:00+08:00
+date: 2025-03-12T02:22:00+08:00
 draft: false
 ---
 
