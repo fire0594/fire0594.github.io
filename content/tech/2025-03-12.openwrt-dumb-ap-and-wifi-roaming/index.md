@@ -19,10 +19,10 @@ draft: false
 
 疑惑
 
-> AP路由器的dnsmasq和防火墙等是否要关闭？
+> **AP路由器的dnsmasq和防火墙等是否要关闭？**
 > 旧版文档说这一步是为了节省资源，但新版说实际好处不大，且配置访客网络时应该启用他们，所以什么都不做就好
 
-> AP路由器的WAN口/WAN6口是否要删除？
+> **AP路由器的WAN口/WAN6口是否要删除？**
 > 旧版文档说这一步是可选步骤，新版则未作任何说明，所以这应该依旧是个可选步骤
 
 ### `先将AP路由器断开网络，只有电脑通过网线连接到其LAN口，然后开始设置`
@@ -72,14 +72,14 @@ draft: false
 
 疑惑
 
-> 802.11 K/V/R 要启用哪些协议？
+> **802.11 K/V/R 要启用哪些协议？**
 > OpenWrt的Wi-Fi漫游文档里面说明如下
 > 802.11r（“快速过渡”）减少了客户端在漫游到不同BSSID时建立安全连接所需的时间。
 > 802.11k（“无线电资源测量”）允许单个BSSID向Wi-Fi客户端提供ESS中包含的其他BSSID和频率列表。这减少了每个客户端需要花费的时间来寻找替代的“更好”SSID，因为它不再需要扫描所有频率。
 > 802.11v（“无线网络管理”）这个标准包括“网络辅助漫游”，BSSID可以推荐客户端可以漫游到的替代BSSID。
 > 所以K/V/R 3个协议都启用的话体验应该会更好
 
-> 在OpenWrt上启用802.11 K/V/R协议需要哪些软件包？
+> **在OpenWrt上启用802.11 K/V/R协议需要哪些软件包？**
 > OpenWrt的802.11s 无线Mesh文档里面说明如下
 > The wpad-basic-* versions only have 802.11r and 802.11w support.
 > The wpad-mesh-* versions only have 802.11r/w and 802.11s support.
@@ -141,15 +141,15 @@ opkg remove wpad-basic-mbedtls && opkg install /tmp/wpad-mbedtls_*.ipk
 
 #### 参考
 
-> OpenWrt设置为AP（当前版本，英文）
+> **OpenWrt设置为AP（当前版本，英文）**
 > https://openwrt.org/docs/guide-user/network/wifi/wifiextenders/bridgedap
 
-> OpenWrt设置为AP（历史版本，中文）
+> **OpenWrt设置为AP（历史版本，中文）**
 > https://openwrt.org/zh/docs/guide-user/network/wifi/dumbap
 
-> OpenWrt Wi-Fi漫游
+> **OpenWrt Wi-Fi漫游**
 > https://openwrt.org/zh/docs/guide-user/network/wifi/roaming
 > https://openwrt.org/docs/guide-user/network/wifi/roaming
 
-> OpenWrt 802.11s 无线Mesh
+> **OpenWrt 802.11s 无线Mesh**
 > https://openwrt.org/docs/guide-user/network/wifi/mesh/802-11s
