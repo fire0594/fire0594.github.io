@@ -41,7 +41,7 @@ nvram set bootdelay=3
 nvram set flag_try_sys1_failed=0
 nvram set flag_try_sys2_failed=1
 nvram commit
-mtd -e firmware -r write /tmp/openwrt-24.10.0-ramips-mt7621-xiaomi_mi-router-cr6609-squashfs-firmware.bin firmwaresh
+mtd -e firmware -r write /tmp/openwrt-24.10.0-ramips-mt7621-xiaomi_mi-router-cr6609-squashfs-firmware.bin firmware
 ```
 
 以上命令参考 *https://www.lotlab.org/2022/11/11/guide-to-flash-openwrt-to-xiaomi-cr660x/*
