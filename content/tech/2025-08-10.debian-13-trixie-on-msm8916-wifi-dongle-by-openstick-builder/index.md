@@ -17,13 +17,13 @@ github上有很多fork，这里使用的是最初的原项目
 > https://github.com/kinsamanka/OpenStick-Builder
 
 先复制项目到本地
-```
+```sh
 git clone --recurse-submodules https://github.com/kinsamanka/OpenStick-Builder.git
 cd OpenStick-Builder/
 ```
 
 debian13的libconfig包版本有变化，需要修改一下
-```
+```sh
 vi scripts/setup.sh
 -    libconfig9 \
 +    libconfig11 \
@@ -66,7 +66,7 @@ postmarketOS对EDL的说明中要求使用这个EDL项目，参考下面这个�
 项目文档没有说，但是文件`autoinstall.sh`代码内有注释要求GCC版本 >= 14，注意检查系统上GCC的版本
 
 先复制项目到本地，并安装python依赖
-```
+```sh
 git clone https://github.com/bkerler/edl
 cd edl
 git submodule update --init --recursive
@@ -74,19 +74,21 @@ pip3 install -r requirements.txt
 ```
 
 安装依赖，这一步同时也会安装fastboot
-```sudo apt install adb fastboot python3-dev python3-pip liblzma-dev git```
+```sh
+sudo apt install adb fastboot python3-dev python3-pip liblzma-dev git
+```
 
 文档里有一步`sudo apt purge modemmanager`，会完全删除`modemmanager`
 感觉这一步没有必要，但没有去实验
 
 停用并禁止`modemmanager`
-```
+```sh
 sudo systemctl stop ModemManager
 sudo systemctl disable ModemManager
 ```
 
 安装
-```
+```sh
 sudo ./autoinstall.sh
 ```
 
@@ -106,7 +108,7 @@ sudo ./autoinstall.sh
 由于之前已经刷过Openstick，先使用`edl wf backup.bin`回到原固件
 
 然后用下面的代码提取分区
-```
+```sh
 for n in fsc fsg modem modemst1 modemst2 persist sec; do
     edl r ${n} ${n}.bin
 done
@@ -121,13 +123,13 @@ done
 `edl w aboot aboot.mbn`
 
 重启到fastboot
-```
+```sh
 edl e boot
 edl reset
 ```
 
 刷入`步骤1`构建的系统
-```
+```sh
 fastboot flash partition gpt_both0.bin
 fastboot flash aboot aboot.mbn
 fastboot flash hyp hyp.mbn
@@ -139,7 +141,7 @@ fastboot flash rootfs rootfs.bin
 ```
 
 刷入`步骤3.1`提取的原固件分区
-```
+```sh
 for n in fsc fsg modem modemst1 modemst2 persist sec; do
     fastboot flash ${n} ${n}.bin
 done
@@ -178,7 +180,7 @@ done
 默认没有启用rc-local
 
 先`sudo vi /etc/rc.local`文件内容如下
-```
+```sh
 #!/bin/bash
 
 echo 0 > /sys/class/leds/red:power/brightness
@@ -188,13 +190,13 @@ exit 0
 ```
 
 添加运行权限
-```
+```sh
 sudo chmod +x /etc/rc.local
 
 ```
 
 再`sudo vi /etc/systemd/system/rc-local.service`创建rc-local服务，文件内容如下
-```
+```sh
 [Unit]
 Description=/etc/rc.local Compatibility
 ConditionFileIsExecutable=/etc/rc.local
@@ -213,7 +215,7 @@ WantedBy=multi-user.target
 ```
 
 最后重新载入并启用rc-local
-```
+```sh
 sudo systemctl daemon-reload
 sudo systemctl enable rc-local
 sudo systemctl start rc-local
@@ -226,7 +228,7 @@ sudo systemctl start rc-local
 
 ## 4.5 修改hostname
 
-```
+```sh
 sudo hostnamectl set-hostname openstick-debian-001
 sudo vi /etc/hosts
 ```
