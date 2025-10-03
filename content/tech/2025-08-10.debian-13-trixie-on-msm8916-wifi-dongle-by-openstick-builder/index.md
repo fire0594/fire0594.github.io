@@ -166,8 +166,8 @@ done
 使用下面这行代码
 `sudo sed -i 's/yiming-uz801v3/<BOARD>/' /boot/extlinux/extlinux.conf`
 
-其中的<BOARD>根据板型替换:
-| <BOARD>      | 板型    |
+其中的\<BOARD\>根据板型替换:
+| \<BOARD\>      | 板型    |
 | ------------ | ------ |
 | thwc-uf896   | UF896  |
 | thwc-ufi001c | UFIxxx |
