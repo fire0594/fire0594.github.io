@@ -8,13 +8,13 @@ draft: false
 ---
 
 
-# 构建
+## 构建
 
 使用这个项目
 > https://github.com/1000001101000/Buildroot_for_Buffalo
 
 
-**构建过程中要注意:**
+### 构建过程中要注意:
 
 需要联网下载文件，最好用科技加速
 
@@ -36,7 +36,7 @@ apt install gcc-multilib g++-multilib
 apt install libssl-dev
 ```
 
-## 下面是构建流程
+### 下面是构建流程
 
 准备构建
 
@@ -73,7 +73,7 @@ make -j$(nproc) || make -j$(nproc)
 
 构建好的磁盘镜像位于 Buildroot_for_Buffalo/buildroot-2025.08.1/output/images
 
-# 安装
+## 安装
 
 参考项目wiki
 > https://github.com/1000001101000/Buildroot_for_Buffalo/wiki/marvell-armada370
