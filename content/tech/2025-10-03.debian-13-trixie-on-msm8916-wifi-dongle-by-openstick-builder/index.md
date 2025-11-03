@@ -9,9 +9,9 @@ draft: false
 
 3年前的随身wifi，msm8916(高通骁龙410)的CPU，512MB内存+4G硬盘
 
-# 1.构建系统 Debian13 (Trixie)
+## 1.构建系统 Debian13 (Trixie)
 
-## 1.1 准备工作
+### 1.1 准备工作
 
 github上有很多fork，这里使用的是最初的原项目
 > https://github.com/kinsamanka/OpenStick-Builder
@@ -29,7 +29,7 @@ vi scripts/setup.sh
 +    libconfig11 \
 ```
 
-## 1.2 开始构建
+### 1.2 开始构建
 
 可以 `sudo ./build.sh` 一步构建，但是为了方便排查过程中的问题，分步操作更好
 
@@ -65,7 +65,12 @@ sudo scripts/build_images.sh
 
 生成的文件位于项目的files文件夹
 
-# 2.安装EDL和fastboot
+### 1.3 构建好的镜像
+
+文件已上传
+> https://drive.google.com/drive/folders/1tWCwCbd79J_jgoCiU3gC8UrUKElzVF3z
+
+## 2.安装EDL和fastboot
 
 后续要用到EDL(高通9008)读写固件，使用这个项目
 > https://github.com/bkerler/edl
@@ -104,9 +109,9 @@ sudo systemctl disable ModemManager
 sudo ./autoinstall.sh
 ```
 
-# 3.刷机
+## 3.刷机
 
-## 3.1 提取原固件分区
+### 3.1 提取原固件分区
 
 备份原固件的这些分区，后续任会用到:
 * fsc.bin
@@ -129,7 +134,7 @@ done
 目前发现 `ufi001` 和 `ufi003` 板型的这些分区可以通用
 在一块 `ufi001` 上提取的分区，在另一块 `其他品牌的ufi001` 和 `ufi003` 上正常工作
 
-## 3.2 写入新固件
+### 3.2 写入新固件
 
 刷入aboot
 ```sh
@@ -166,15 +171,15 @@ done
 fastboot reboot
 ```
 
-# 4.系统配置
+## 4.系统配置
 
-## 4.1 SSH登录
+### 4.1 SSH登录
 
 默认有1个wifi热点，SSID为 `Openstick` ，密码为 `openstick`
 连接这个热点或者插入USB(NDIS有线网卡)，SSH登录 `192.168.5.1` ，用户名 `user` ，密码 `1`
 之前 Debian 12 时热点是正常的，但是 Debian 13 的热点在设备启动后没有自动启用，原因不明，不过不影响后续使用
 
-## 4.2 板型调整
+### 4.2 板型调整
 
 项目支持多种板型，默认设置是UZ801
 需要根据板型调整配置，目前发现如果配置不正确LED不能正常工作
@@ -192,7 +197,7 @@ sudo sed -i 's/yiming-uz801v3/<BOARD>/' /boot/extlinux/extlinux.conf
 | jz01-45-v33  | JZxxx  |
 | fy-mf800     | MF800  |
 
-## 4.3 配置LED
+### 4.3 配置LED
 
 默认启动完成后红灯常亮，修改为蓝灯常亮
 默认没有启用rc-local
@@ -239,12 +244,12 @@ sudo systemctl enable rc-local
 sudo systemctl start rc-local
 ```
 
-## 4.4 配置wifi
+### 4.4 配置wifi
 
 和openstick原项目相同，使用 `nmtui` 进行配置，参考下面的链接
 > https://www.kancloud.cn/handsomehacker/openstick/2637559
 
-## 4.5 修改hostname
+### 4.5 修改hostname
 
 ```sh
 sudo hostnamectl set-hostname openstick-debian-001
